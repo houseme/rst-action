@@ -154,11 +154,20 @@ jobs:
           ls -la static
         shell: bash
 
+      # 步骤 9：安装交叉编译工具链（Linux）
+      - name: Install Cross-Compilation Tools (Linux)
+        if: matrix.os == 'ubuntu-latest' && matrix.target == 'aarch64-unknown-linux-gnu'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
+          aarch64-linux-gnu-gcc --version  # 验证安装
+        shell: bash
+      
       # 步骤 9：编译 Rust 项目（Windows 使用 PowerShell）
       - name: Build Rust Binary (Windows)
         if: matrix.os == 'windows-latest'
         run: |
-          cargo build --release --target ${{ matrix.target }}
+          cargo build --release --target ${{ matrix.target }} --verbose
           if ($LASTEXITCODE -ne 0) {
             Write-Error "Rust build failed"
             exit 1
@@ -169,11 +178,38 @@ jobs:
       - name: Build Rust Binary (Linux/macOS)
         if: matrix.os != 'windows-latest'
         run: |
-          cargo build --release --target ${{ matrix.target }}
-          if [ $? -ne 0 ]; then
-            echo "Rust build failed"
-            exit 1
-          fi
+          # 根据目标配置链接器
+               case "${{ matrix.target }}" in
+               "x86_64-unknown-linux-gnu")
+          # 默认 gcc
+               export CC_x86_64_unknown_linux_gnu=gcc
+               export CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=gcc
+               ;;
+               "aarch64-unknown-linux-gnu")
+          # AArch64 交叉编译器
+               export CC_aarch64_unknown_linux_gnu=aarch64-linux-gnu-gcc
+               export CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc
+               ;;
+               "x86_64-apple-darwin")
+          # macOS 默认 clang
+               export CC_x86_64_apple_darwin=clang
+               export CARGO_TARGET_X86_64_APPLE_DARWIN_LINKER=clang
+               ;;
+               "aarch64-apple-darwin")
+          # macOS ARM64 使用 clang
+               export CC_aarch64_apple_darwin=clang
+               export CARGO_TARGET_AARCH64_APPLE_DARWIN_LINKER=clang
+               ;;
+          esac
+          # 验证环境变量（调试用）
+               echo "CC for ${{ matrix.target }}: $CC_${{ matrix.target }}"
+               echo "Linker for ${{ matrix.target }}: $CARGO_TARGET_${{ matrix.target }}_LINKER"
+          # 执行编译
+               cargo build --release --target ${{ matrix.target }} --verbose
+               if [ $? -ne 0 ]; then
+               echo "Rust build failed"
+               exit 1
+               fi
         shell: bash
 
       # 步骤 11：打包二进制文件和 static 目录（Windows 使用 PowerShell）
