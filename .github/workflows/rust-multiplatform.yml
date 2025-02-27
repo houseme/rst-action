@@ -274,24 +274,24 @@ jobs:
           fi
         shell: bash
 
-release:
-  needs: build-and-package
-  runs-on: ubuntu-latest
-  if: startsWith(github.ref, 'refs/tags/')
-  steps:
-    - name: Download All Artifacts
-      uses: actions/download-artifact@v4
-      with:
-        path: artifacts
-    # 步骤 14：发布到 GitHub Releases（使用 v2）
-    - name: Release Package
-      uses: softprops/action-gh-release@v2
-      with:
-        tag_name: ${{ github.ref_name }}
-        name: RST Action Release ${{ github.ref_name }}
-        draft: false
-        prerelease: false
-        files: artifacts/**/*.zip
-        token: ${{ secrets.GITHUB_TOKEN }}  # 显式使用 GITHUB_TOKEN
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # 确保环境变量可用
+  release:
+    needs: build-and-package
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    steps:
+      - name: Download All Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      # 步骤 14：发布到 GitHub Releases（使用 v2）
+      - name: Release Package
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: RST Action Release ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+          files: artifacts/**/*.zip
+          token: ${{ secrets.GITHUB_TOKEN }}  # 显式使用 GITHUB_TOKEN
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # 确保环境变量可用
