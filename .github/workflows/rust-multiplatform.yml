@@ -86,13 +86,14 @@ jobs:
       - name: Download Static Assets (Linux/macOS)
         if: matrix.os != 'windows-latest'
         run: |
-          url="https://dl.rustfs.com/console/console.latest.tar.gz"  # 可改为 a.tar.gz 测试
+          url="https://dl.rustfs.com/console/console.latest.tar.gz"  # 可改为 a.zip 测试
           file=$(basename "$url")
           curl -L -o "$file" "$url"
           if [ ! -f "$file" ]; then
-            echo "Failed to download $file"
+            echo "Error: Failed to download $file"
             exit 1
           fi
+          echo "Downloaded $file successfully"
           ls -l "$file"
         shell: bash
 
@@ -116,6 +117,11 @@ jobs:
         if: matrix.os != 'windows-latest'
         run: |
           file=$(ls *.zip *.tar.gz 2>/dev/null | head -n 1)
+          if [ -z "$file" ]; then
+            echo "Error: No .zip or .tar.gz file found in the current directory"
+            ls -la  # 显示当前目录内容以便调试
+            exit 1
+          fi
           mkdir -p static
           if [[ "$file" == *.zip ]]; then
             unzip "$file" -d static
