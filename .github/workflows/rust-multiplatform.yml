@@ -76,8 +76,6 @@ jobs:
             Write-Error "Failed to download static.tar.gz"
             exit 1
           }
-        if: matrix.os == 'windows-latest'
-        shell: powershell  # 使用 PowerShell 确保跨平台兼容
 
       # 步骤 6：创建 static 目录并解压文件
       - name: Extract Static Assets
@@ -92,13 +90,11 @@ jobs:
           }
           Remove-Item static.tar.gz
           dir static 2>$null || ls -la static  # 检查解压内容
-        if: matrix.os == 'windows-latest'
-        shell: powershell
 
       # 步骤 7：编译 Rust 项目
       - name: Build Rust Binary
         run: cargo build --release --target ${{ matrix.target }}
-        shell: bash  # Cargo 命令在 bash 下更稳定
+      # shell: bash  # Cargo 命令在 bash 下更稳定
 
       # 步骤 8：打包二进制文件和 static 目录
       - name: Package Binary and Static Assets
