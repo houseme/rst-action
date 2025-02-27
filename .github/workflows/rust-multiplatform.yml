@@ -263,6 +263,10 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ github.ref }}
+          name: rst-action-${{ matrix.target }}-${{ matrix.os }}-${{ github.ref }}
+          draft: false
+          prerelease: false
           files: release-package-${{ matrix.target }}-${{ matrix.os }}.zip
           token: ${{ secrets.GITHUB_TOKEN }}  # 显式使用 GITHUB_TOKEN
         env:
