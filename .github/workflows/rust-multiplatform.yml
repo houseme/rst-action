@@ -76,6 +76,7 @@ jobs:
             Write-Error "Failed to download static.tar.gz"
             exit 1
           }
+        if: matrix.os == 'windows-latest'
         shell: powershell  # 使用 PowerShell 确保跨平台兼容
 
       # 步骤 6：创建 static 目录并解压文件
@@ -91,6 +92,7 @@ jobs:
           }
           Remove-Item static.tar.gz
           dir static 2>$null || ls -la static  # 检查解压内容
+        if: matrix.os == 'windows-latest'
         shell: powershell
 
       # 步骤 7：编译 Rust 项目
@@ -110,6 +112,7 @@ jobs:
             tar -czf release-package-${{ matrix.target }}-${{ matrix.os }}.tar.gz -C release-package .
           }
           ls -la 2>/dev/null || dir
+        if: matrix.os == 'windows-latest'
         shell: powershell
 
       # 步骤 9：上传压缩文件作为构建产物
