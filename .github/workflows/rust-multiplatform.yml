@@ -118,17 +118,37 @@ jobs:
         if: matrix.os != 'windows-latest'
         run: |
           ls -la
-          file=$(ls *.zip *.tar.gz 2>/dev/null | head -n 1)
+          # file=$(ls *.zip *.tar.gz 2>/dev/null | head -n 1)
+          # 查找第一个 .zip 或 .tar.gz 文件
+          file=""
+          for f in *.zip *.tar.gz; do
+            if [ -f "$f" ]; then
+              file="$f"
+              break
+            fi
+          done
           if [ -z "$file" ]; then
             echo "Error: No .zip or .tar.gz file found in the current directory"
             ls -la  # 显示当前目录内容以便调试
             exit 1
           fi
+          # 输出找到的文件名
+          echo "Found file: $file"
           mkdir -p static
           if [[ "$file" == *.zip ]]; then
-            unzip "$file" -d static
+            echo "Unzipping $file to static/"
+            unzip "$file" -d static || { echo "Error: Failed to unzip $file"; exit 1; }
           elif [[ "$file" == *.tar.gz ]]; then
-            tar -xzf "$file" -C static
+            echo "Extracting $file to static/"
+            tar -xzf "$file" -C static || { echo "Error: Failed to extract $file"; exit 1; }
+          else
+            echo "Error: Unsupported file format: $file"
+            exit 1
+          fi
+          # 检查解压是否成功
+          if [ $? -ne 0 ]; then
+            echo "Error: Failed to extract $file"
+            exit 2
           fi
           rm "$file"
           ls -la static
