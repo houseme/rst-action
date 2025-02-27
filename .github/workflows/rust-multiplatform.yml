@@ -217,6 +217,22 @@ jobs:
                fi
         shell: bash
 
+      # 设置 TAG 值
+      - name: Set Tag Variable
+        run: |
+          # 初始化 TAG
+          TAG="notag"
+          # 如果是 pull_request，使用 "main"
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            TAG="main"
+          # 如果是 tag 推送，使用 tag 值
+          elif [ "${{ github.event_name }}" = "push" ] && [[ "${{ github.ref }}" =~ ^refs/tags/ ]]; then
+            TAG="${{ github.ref_name }}"
+          fi
+          echo "TAG=$TAG" >> $GITHUB_ENV
+          echo "Set TAG to: $TAG"
+        shell: bash
+
       # 步骤 11：打包二进制文件和 static 目录（Windows 使用 PowerShell）
       - name: Package Binary and Static Assets (Windows)
         if: matrix.os == 'windows-latest'
@@ -224,7 +240,7 @@ jobs:
           New-Item -ItemType Directory -Path release-package -Force | Out-Null
           Copy-Item "target/${{ matrix.target }}/release/rst-action.exe" -Destination release-package/
           Copy-Item -Recurse static release-package/
-          7z a "release-package-${{ matrix.target }}-${{ matrix.os }}.zip" "release-package/*" -r
+          7z a "release-package-${{ matrix.target }}-${{ matrix.os }}-${{ env.TAG }}.zip" "release-package/*" -r
           Get-ChildItem .
         shell: powershell
 
@@ -235,7 +251,7 @@ jobs:
           mkdir -p release-package
           cp target/${{ matrix.target }}/release/rst-action release-package/
           cp -r static release-package/
-          zip -r release-package-${{ matrix.target }}-${{ matrix.os }}.zip release-package/*
+          zip -r release-package-${{ matrix.target }}-${{ matrix.os }}-${{ env.TAG }}.zip release-package/*
           ls -la
         shell: bash
 
@@ -243,31 +259,39 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: release-package-${{ matrix.target }}-${{ matrix.os }}
-          path: release-package-${{ matrix.target }}-${{ matrix.os }}.zip
+          name: release-package-${{ matrix.target }}-${{ matrix.os }}-${{ env.TAG }}
+          path: release-package-${{ matrix.target }}-${{ matrix.os }}-${{ env.TAG }}.zip
 
       - name: Debug GitHub Context
         run: echo "github.ref = ${{ github.ref }}"
 
       - name: Check Artifact Before Release
         run: |
-          if [ ! -f "release-package-${{ matrix.target }}-${{ matrix.os }}.zip" ]; then
-            echo "Error: File release-package-${{ matrix.target }}-${{ matrix.os }}.zip not found"
+          if [ ! -f "release-package-${{ matrix.target }}-${{ matrix.os }}-${{ env.TAG }}.zip" ]; then
+            echo "Error: File release-package-${{ matrix.target }}-${{ matrix.os }}-${{ env.TAG }}.zip not found"
             ls -la || dir
             exit 1
           fi
         shell: bash
 
-      # 步骤 14：发布到 GitHub Releases（使用 v2）
-      - name: Release Package
-        if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ github.ref }}
-          name: rst-action-${{ matrix.target }}-${{ matrix.os }}-${{ github.ref }}
-          draft: false
-          prerelease: false
-          files: release-package-${{ matrix.target }}-${{ matrix.os }}.zip
-          token: ${{ secrets.GITHUB_TOKEN }}  # 显式使用 GITHUB_TOKEN
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # 确保环境变量可用
+release:
+  needs: build-and-package
+  runs-on: ubuntu-latest
+  if: startsWith(github.ref, 'refs/tags/')
+  steps:
+    - name: Download All Artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: artifacts
+    # 步骤 14：发布到 GitHub Releases（使用 v2）
+    - name: Release Package
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: ${{ github.ref_name }}
+        name: RST Action Release ${{ github.ref_name }}
+        draft: false
+        prerelease: false
+        files: artifacts/**/*.zip
+        token: ${{ secrets.GITHUB_TOKEN }}  # 显式使用 GITHUB_TOKEN
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # 确保环境变量可用
