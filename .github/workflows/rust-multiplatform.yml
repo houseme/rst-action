@@ -217,7 +217,7 @@ jobs:
         if: matrix.os == 'windows-latest'
         run: |
           New-Item -ItemType Directory -Path release-package -Force | Out-Null
-          Copy-Item "target/${{ matrix.target }}/release/<your-binary-name>.exe" -Destination release-package/
+          Copy-Item "target/${{ matrix.target }}/release/rst-action.exe" -Destination release-package/
           Copy-Item -Recurse static release-package/
           7z a "release-package-${{ matrix.target }}-${{ matrix.os }}.zip" "release-package/*" -r
           Get-ChildItem .
@@ -228,7 +228,7 @@ jobs:
         if: matrix.os != 'windows-latest'
         run: |
           mkdir -p release-package
-          cp target/${{ matrix.target }}/release/<your-binary-name> release-package/
+          cp target/${{ matrix.target }}/release/rst-action release-package/
           cp -r static release-package/
           zip -r release-package-${{ matrix.target }}-${{ matrix.os }}.zip release-package/*
           ls -la
