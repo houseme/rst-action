@@ -1,0 +1,127 @@
+name: Rust OmniForge Build
+
+# 触发条件：推送至 main 分支或手动触发
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+# 权限设置：允许写入内容以便上传产物
+permissions:
+  contents: write
+
+# 定义构建作业
+jobs:
+  build-and-package:
+    name: Build and Package for ${{ matrix.os }}-${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+
+    # 矩阵策略：定义操作系统和目标架构组合
+    strategy:
+      matrix:
+        os: [ ubuntu-latest, macos-latest, windows-latest ]
+        target: [ x86_64-unknown-linux-gnu, aarch64-unknown-linux-gnu, x86_64-apple-darwin, aarch64-apple-darwin, x86_64-pc-windows-msvc ]
+        exclude:
+          - os: windows-latest
+            target: aarch64-unknown-linux-gnu
+          - os: windows-latest
+            target: aarch64-apple-darwin
+          - os: ubuntu-latest
+            target: x86_64-apple-darwin
+          - os: ubuntu-latest
+            target: aarch64-apple-darwin
+          - os: macos-latest
+            target: x86_64-unknown-linux-gnu
+          - os: macos-latest
+            target: aarch64-unknown-linux-gnu
+          - os: macos-latest
+            target: x86_64-pc-windows-msvc
+          - os: ubuntu-latest
+            target: x86_64-pc-windows-msvc
+
+    steps:
+      # 步骤 1：检出代码
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      # 步骤 2：安装 Rust 工具链
+      - name: Install Rust Toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      # 步骤 3：缓存 Cargo 依赖
+      - name: Cache Cargo Dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ matrix.os }}-${{ matrix.target }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ matrix.os }}-${{ matrix.target }}-cargo-
+
+      # 步骤 4：在 Windows 上安装 7-Zip
+      - name: Install 7-Zip (Windows)
+        if: matrix.os == 'windows-latest'
+        run: choco install 7zip -y
+        shell: powershell
+
+      # 步骤 5：下载 tar.gz 文件
+      - name: Download Static Assets
+        run: |
+          curl -L -o static.tar.gz dl.rustfs.com/console/console.latest.tar.gz
+          if ($LASTEXITCODE -ne 0 -or !(Test-Path static.tar.gz)) { 
+            Write-Error "Failed to download static.tar.gz"
+            exit 1
+          }
+        shell: powershell  # 使用 PowerShell 确保跨平台兼容
+
+      # 步骤 6：创建 static 目录并解压文件
+      - name: Extract Static Assets
+        run: |
+          mkdir static -Force
+          if ("${{ matrix.os }}" -eq "windows-latest") {
+            7z x static.tar.gz -o"static" -y
+            7z x static.tar -o"static" -y  # 处理 tar.gz 双重压缩
+            Remove-Item static.tar -ErrorAction SilentlyContinue
+          } else {
+            tar -xzf static.tar.gz -C static
+          }
+          Remove-Item static.tar.gz
+          dir static 2>$null || ls -la static  # 检查解压内容
+        shell: powershell
+
+      # 步骤 7：编译 Rust 项目
+      - name: Build Rust Binary
+        run: cargo build --release --target ${{ matrix.target }}
+        shell: bash  # Cargo 命令在 bash 下更稳定
+
+      # 步骤 8：打包二进制文件和 static 目录
+      - name: Package Binary and Static Assets
+        run: |
+          mkdir release-package -Force
+          if ("${{ matrix.os }}" -eq "windows-latest") {
+            Copy-Item target/${{ matrix.target }}/release/<your-binary-name>.exe release-package/
+            7z a release-package-${{ matrix.target }}-${{ matrix.os }}.zip -r release-package/*
+          } else {
+            cp target/${{ matrix.target }}/release/<your-binary-name> release-package/
+            tar -czf release-package-${{ matrix.target }}-${{ matrix.os }}.tar.gz -C release-package .
+          }
+          ls -la 2>/dev/null || dir
+        shell: powershell
+
+      # 步骤 9：上传压缩文件作为构建产物
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: release-package-${{ matrix.target }}-${{ matrix.os }}
+          path: release-package-${{ matrix.target }}-${{ matrix.os }}.*
+
+      # 可选步骤 10：发布到 GitHub Releases
+      - name: Release Package
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v1
+        with:
+          files: release-package-${{ matrix.target }}-${{ matrix.os }}.*

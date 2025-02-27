@@ -1,0 +1,10 @@
+[package]
+name = "rst-action"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+clap = { version = "4.5.31", features = ["derive"] }
+ipnet = "2.11.0"
+sysinfo = "0.33.1"
+whoami = "1.5.2"
