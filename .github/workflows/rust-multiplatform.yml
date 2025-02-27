@@ -95,6 +95,7 @@ jobs:
           fi
           echo "Downloaded $file successfully"
           ls -l "$file"
+          ls -la
         shell: bash
 
       # 步骤 7：解压压缩文件（Windows 使用 PowerShell + 7-Zip）
@@ -116,6 +117,7 @@ jobs:
       - name: Extract Static Assets (Linux/macOS)
         if: matrix.os != 'windows-latest'
         run: |
+          ls -la
           file=$(ls *.zip *.tar.gz 2>/dev/null | head -n 1)
           if [ -z "$file" ]; then
             echo "Error: No .zip or .tar.gz file found in the current directory"
