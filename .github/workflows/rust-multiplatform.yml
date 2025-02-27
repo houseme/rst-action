@@ -71,7 +71,7 @@ jobs:
       # 步骤 5：下载 tar.gz 文件
       - name: Download Static Assets
         run: |
-          curl -L -o static.tar.gz dl.rustfs.com/console/console.latest.tar.gz
+          curl -L -o static.tar.gz https://dl.rustfs.com/console/console.latest.tar.gz
           if ($LASTEXITCODE -ne 0 -or !(Test-Path static.tar.gz)) { 
             Write-Error "Failed to download static.tar.gz"
             exit 1
