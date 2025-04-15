@@ -1,0 +1,44 @@
+FROM ubuntu:22.04
+
+LABEL maintainer="you@example.com"
+LABEL org.opencontainers.image.source="https://github.com/houseme/rst-action"
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get install -y \
+    wget curl git build-essential ca-certificates \
+    python3 qemu-user gcc g++ make cmake pkg-config \
+    xz-utils unzip
+
+# ✅ 安装 LoongArch 工具链（musl 版本）
+RUN mkdir -p /opt/toolchains && \
+    wget -O /opt/toolchains/loongarch64-linux-musl-cross.tar.xz https://github.com/musl-cross/musl-cross/releases/download/20250206/loongarch64-unknown-linux-musl.tar.xz && \
+    tar -xvf /opt/toolchains/loongarch64-linux-musl-cross.tar.xz -C /opt/toolchains && \
+    rm /opt/toolchains/loongarch64-linux-musl-cross.tar.xz
+
+ENV PATH="/opt/toolchains/loongarch64-linux-musl-cross/bin:${PATH}"
+
+# ✅ 安装 Rust 目标
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y && \
+    . $HOME/.cargo/env && \
+    rustup target add loongarch64-unknown-linux-musl
+
+ENV CARGO_HOME="/root/.cargo"
+ENV RUSTUP_HOME="/root/.rustup"
+ENV PATH="${CARGO_HOME}/bin:${PATH}"
+
+# 设置默认 linker
+RUN mkdir -p /root/.cargo && echo '[target.loongarch64-unknown-linux-musl]\nlinker = "loongarch64-linux-musl-gcc"' > /root/.cargo/config.toml
+
+CMD ["/bin/bash"]
+
+
+WORKDIR /app
+COPY . .
+
+RUN cargo build --release --target loongarch64-unknown-linux-musl
+
+FROM alpine:latest
+COPY --from=builder /app/target/loongarch64-unknown-linux-musl/release/rst-action /usr/local/bin/rst-action
+
+ENTRYPOINT ["/usr/local/bin/rst-action"]

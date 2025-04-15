@@ -1,0 +1,12 @@
+# Dockerfile.x86_64
+FROM messense/rust-musl-cross:x86_64-musl as builder
+
+WORKDIR /app
+COPY . .
+
+RUN cargo build --release --target x86_64-unknown-linux-musl
+
+FROM alpine:latest
+COPY --from=builder /app/target/x86_64-unknown-linux-musl/release/rst-action /usr/local/bin/rst-action
+
+ENTRYPOINT ["/usr/local/bin/rst-action"]

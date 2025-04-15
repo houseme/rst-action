@@ -1,0 +1,12 @@
+# Dockerfile.aarch64
+FROM messense/rust-musl-cross:aarch64-musl as builder
+
+WORKDIR /app
+COPY . .
+
+RUN cargo build --release --target aarch64-unknown-linux-musl
+
+FROM alpine:latest
+COPY --from=builder /app/target/aarch64-unknown-linux-musl/release/rst-action /usr/local/bin/rst-action
+
+ENTRYPOINT ["/usr/local/bin/rst-action"]

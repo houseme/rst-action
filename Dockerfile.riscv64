@@ -1,0 +1,12 @@
+# Dockerfile.riscv64
+FROM messense/rust-musl-cross:riscv64-musl as builder
+
+WORKDIR /app
+COPY . .
+
+RUN cargo build --release --target riscv64-unknown-linux-musl
+
+FROM alpine:latest
+COPY --from=builder /app/target/riscv64-unknown-linux-musl/release/rst-action /usr/local/bin/rst-action
+
+ENTRYPOINT ["/usr/local/bin/rst-action"]
