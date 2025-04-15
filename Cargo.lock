@@ -662,6 +662,7 @@ dependencies = [
  "clap",
  "fs_extra",
  "ipnet",
+ "libdbus-sys",
  "sysinfo",
  "whoami",
  "xcap",
