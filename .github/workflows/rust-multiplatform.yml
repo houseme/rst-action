@@ -166,7 +166,7 @@ jobs:
         run: |
           sudo apt-get clean
           sudo apt-get update
-          sudo apt-get installgcc pkg-config libssl-dev lld libdbus-1-dev libwayland-dev libwebkit2gtk-4.1-dev libxdo-dev libdbus-sys build-essential -y
+          sudo apt-get install gcc pkg-config libssl-dev lld libdbus-1-dev libwayland-dev libwebkit2gtk-4.1-dev libxdo-dev libdbus-sys build-essential -y
         shell: bash
 
       - name: Install Cross-Compilation Tools (Linux)
