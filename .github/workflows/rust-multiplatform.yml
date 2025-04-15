@@ -161,7 +161,7 @@ jobs:
         shell: bash
 
       # Installing the Cross-Compilation Toolchain (Linux)
-      - name: Install Cross-Compilation Tools (Linux)
+      - name: Install Cross-Compilation Tools build-essential (Linux)
         if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt-get update
