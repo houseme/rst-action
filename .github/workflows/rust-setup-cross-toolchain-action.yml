@@ -36,4 +36,18 @@ jobs:
         uses: taiki-e/setup-cross-toolchain-action@v1
         with:
           target: ${{ matrix.target }}
+      # Installing the Cross-Compilation Toolchain (Linux)
+      - name: Install Cross-Compilation Tools (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install build-essential
+        shell: bash
+      - name: Install Cross-Compilation Tools (Linux)
+        if: matrix.os == 'ubuntu-latest' && (matrix.target == 'aarch64-unknown-linux-musl'||
+          matrix.target == 'riscv64gc-unknown-linux-musl'|| matrix.target == 'x86_64-unknown-linux-musl' )
+        run: |
+          sudo apt-get update
+          sudo apt-get install musl-tools
+        shell: bash
       - run: cargo test --verbose
