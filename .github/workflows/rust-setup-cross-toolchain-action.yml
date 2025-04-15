@@ -22,11 +22,11 @@ jobs:
           - stable
           - nightly
         target:
-          #          - aarch64-unknown-linux-gnu
-          #          - riscv64gc-unknown-linux-gnu
+          - aarch64-unknown-linux-gnu
+          - riscv64gc-unknown-linux-gnu
           - x86_64-unknown-linux-gnu
-          #          - aarch64-unknown-linux-musl
-          #          - riscv64gc-unknown-linux-musl
+          - aarch64-unknown-linux-musl
+          - riscv64gc-unknown-linux-musl
           - x86_64-unknown-linux-musl
     runs-on: ${{ matrix.os }}
     name: Build and Package for ${{ matrix.os }}-${{ matrix.target }}
@@ -39,8 +39,13 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-      - name: Install Rust
-        run: rustup update ${{ matrix.rust }} && rustup default ${{ matrix.rust }}
+      # - name: Install Rust
+      #   run: rustup update ${{ matrix.rust }} && rustup default ${{ matrix.rust }}
+      - name: Install Rust Toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          targets: ${{ matrix.target }}
+          toolchain: ${{ matrix.rust }}
       - name: Install cross-compilation tools
         uses: taiki-e/setup-cross-toolchain-action@v1
         with:

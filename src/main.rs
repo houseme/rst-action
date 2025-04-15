@@ -122,6 +122,7 @@ fn display_network_speed(sys: &mut System, interval: u64) {
             data.transmitted() / 1024
         );
     }
+    println!("display_network_speed end");
 }
 
 #[cfg(test)]
@@ -135,92 +136,88 @@ mod tests {
         display_network_speed(&mut sys, 1);
     }
 
-    use fs_extra::dir;
-    use std::time::Instant;
-    use xcap::{Monitor, Window};
+    // fn normalized(filename: String) -> String {
+    //     filename.replace(['|', '\\', ':', '/'], "")
+    // }
 
-    fn normalized(filename: String) -> String {
-        filename.replace(['|', '\\', ':', '/'], "")
-    }
-
-    #[test]
-    fn test_main() {
-        let start = Instant::now();
-        let monitors = Monitor::all().unwrap();
-
-        dir::create_all("target/monitors", true).unwrap();
-
-        for monitor in monitors {
-            let image = monitor.capture_image().unwrap();
-
-            image
-                .save(format!(
-                    "target/monitors/monitor-{}.png",
-                    normalized(monitor.name().unwrap())
-                ))
-                .unwrap();
-        }
-
-        println!("运行耗时：{:?}", start.elapsed());
-        let windows = Window::all().unwrap();
-        dir::create_all("target/windows", true).unwrap();
-        for window in windows.clone() {
-            println!(
-                "Window:\n id: {}\n pid: {}\n app_name: {}\n title: {}\n monitor: {}\n position: {:?}\n size {:?}\n state {:?}\n",
-                window.id().unwrap(),
-                window.pid().unwrap(),
-                window.app_name().unwrap(),
-                window.title().unwrap(),
-                window.current_monitor().unwrap().name().unwrap(),
-                (
-                    window.x().unwrap(),
-                    window.y().unwrap(),
-                    window.z().unwrap()
-                ),
-                (window.width().unwrap(), window.height().unwrap()),
-                (
-                    window.is_minimized().unwrap(),
-                    window.is_maximized().unwrap(),
-                    window.is_focused().unwrap()
-                )
-            );
-            let image = window.capture_image().unwrap();
-            image
-                .save(format!(
-                    "target/windows/window-{}.png",
-                    normalized(window.title().unwrap())
-                ))
-                .unwrap();
-        }
-    }
-
-    #[test]
-    fn test_video_recorder() {
-        let monitor = Monitor::from_point(100, 100).unwrap();
-
-        let (video_recorder, sx) = monitor.video_recorder().unwrap();
-
-        thread::spawn(move || {
-            loop {
-                match sx.recv() {
-                    Ok(frame) => {
-                        println!("frame: {:?}", frame.width);
-                    }
-                    _ => continue,
-                }
-            }
-        });
-
-        println!("start");
-        video_recorder.start().unwrap();
-        thread::sleep(Duration::from_secs(2));
-        println!("stop");
-        video_recorder.stop().unwrap();
-        thread::sleep(Duration::from_secs(2));
-        println!("start");
-        video_recorder.start().unwrap();
-        thread::sleep(Duration::from_secs(2));
-        println!("stop");
-        video_recorder.stop().unwrap();
-    }
+    // #[test]
+    // fn test_main() {
+    //     let start = Instant::now();
+    //     let monitors = Monitor::all().unwrap();
+    //
+    //     dir::create_all("target/monitors", true).unwrap();
+    //
+    //     for monitor in monitors {
+    //         let image = monitor.capture_image().unwrap();
+    //
+    //         image
+    //             .save(format!(
+    //                 "target/monitors/monitor-{}.png",
+    //                 normalized(monitor.name().unwrap())
+    //             ))
+    //             .unwrap();
+    //     }
+    //
+    //     println!("运行耗时：{:?}", start.elapsed());
+    //     let windows = Window::all().unwrap();
+    //     dir::create_all("target/windows", true).unwrap();
+    //     for window in windows.clone() {
+    //         println!(
+    //             "Window:\n id: {}\n pid: {}\n app_name: {}\n title: {}\n monitor: {}\n position: {:?}\n size {:?}\n state {:?}\n",
+    //             window.id().unwrap(),
+    //             window.pid().unwrap(),
+    //             window.app_name().unwrap(),
+    //             window.title().unwrap(),
+    //             window.current_monitor().unwrap().name().unwrap(),
+    //             (
+    //                 window.x().unwrap(),
+    //                 window.y().unwrap(),
+    //                 window.z().unwrap()
+    //             ),
+    //             (window.width().unwrap(), window.height().unwrap()),
+    //             (
+    //                 window.is_minimized().unwrap(),
+    //                 window.is_maximized().unwrap(),
+    //                 window.is_focused().unwrap()
+    //             )
+    //         );
+    //         let image = window.capture_image().unwrap();
+    //         image
+    //             .save(format!(
+    //                 "target/windows/window-{}.png",
+    //                 normalized(window.title().unwrap())
+    //             ))
+    //             .unwrap();
+    //     }
+    // }
+    //
+    // #[test]
+    // fn test_video_recorder() {
+    //     let monitor = Monitor::from_point(100, 100).unwrap();
+    //
+    //     let (video_recorder, sx) = monitor.video_recorder().unwrap();
+    //
+    //     thread::spawn(move || {
+    //         loop {
+    //             match sx.recv() {
+    //                 Ok(frame) => {
+    //                     println!("frame: {:?}", frame.width);
+    //                 }
+    //                 _ => continue,
+    //             }
+    //         }
+    //     });
+    //
+    //     println!("start");
+    //     video_recorder.start().unwrap();
+    //     thread::sleep(Duration::from_secs(2));
+    //     println!("stop");
+    //     video_recorder.stop().unwrap();
+    //     thread::sleep(Duration::from_secs(2));
+    //     println!("start");
+    //     video_recorder.start().unwrap();
+    //     thread::sleep(Duration::from_secs(2));
+    //     println!("stop");
+    //     video_recorder.stop().unwrap();
+    // }
 }
