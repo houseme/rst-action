@@ -6,6 +6,18 @@ image = "ghcr.io/rustfs/loongarch64-cross:musl"
 
 [target.riscv64gc-unknown-linux-gnu]
 image = "ghcr.io/cross-rs/riscv64gc-unknown-linux-gnu"
+dockerfile = "./Dockerfile.riscv644"
+pre-build = [
+    "dpkg --add-architecture riscv64",
+    "apt-get update"
+]
+
+[build.env]
+passthrough = [
+    "DISPLAY", # 允许 GUI 显示
+    "WAYLAND_DISPLAY",
+    "DBUS_SESSION_BUS_ADDRESS"
+]
 
 [target.riscv64gc-unknown-linux-musl]
 image = "ghcr.io/cross-rs/riscv64gc-unknown-linux-musl"

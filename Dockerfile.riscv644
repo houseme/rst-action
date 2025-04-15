@@ -1,0 +1,19 @@
+# File: Dockerfile.riscv64
+FROM ghcr.io/cross-rs/riscv64gc-unknown-linux-gnu:main
+
+# 安装系统依赖
+RUN apt-get update && \
+    apt-get install -y \
+    gcc-riscv64-linux-gnu \
+    libssl-dev:riscv64 \
+    libdbus-1-dev:riscv64 \
+    libwayland-dev:riscv64 \
+    libwebkit2gtk-4.1-dev:riscv64 \
+    libxdo-dev:riscv64 \
+    qemu-user-static && \
+    rm -rf /var/lib/apt/lists/*
+
+# 设置交叉编译环境
+ENV CARGO_TARGET_RISCV64GC_UNKNOWN_LINUX_GNU_LINKER=riscv64-linux-gnu-gcc \
+    PKG_CONFIG_SYSROOT_DIR=/usr/riscv64-linux-gnu \
+    PKG_CONFIG_PATH=/usr/riscv64-linux-gnu/lib/pkgconfig
