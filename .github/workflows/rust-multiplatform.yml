@@ -164,16 +164,13 @@ jobs:
       - name: Install Cross-Compilation Tools build-essential (Linux)
         if: matrix.os == 'ubuntu-latest'
         run: |
-          sudo apt-get clean
-          sudo apt-get update
-          sudo apt-get install gcc pkg-config libssl-dev lld libdbus-1-dev libwayland-dev libwebkit2gtk-4.1-dev libxdo-dev libdbus-sys build-essential -y
+          sudo apt-get clean && sudo apt-get update && sudo apt-get install gcc pkg-config libssl-dev lld libdbus-1-dev libwayland-dev libwebkit2gtk-4.1-dev libxdo-dev build-essential -y
         shell: bash
 
       - name: Install Cross-Compilation Tools (Linux)
         if: matrix.os == 'ubuntu-latest' && matrix.target == 'aarch64-unknown-linux-gnu'
         run: |
-          sudo apt-get update
-          sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu aarch64-linux-gnu-gcc --version -y  # Verify the installation
+          sudo apt-get update && sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu aarch64-linux-gnu-gcc --version -y  # Verify the installation
         shell: bash
       
       # Compile the Rust project（Windows used PowerShell）
