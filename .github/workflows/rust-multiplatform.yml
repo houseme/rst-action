@@ -79,7 +79,7 @@ jobs:
       - name: Download Static Assets (Windows)
         if: matrix.os == 'windows-latest'
         run: |
-          $url = "https://dl.rustfs.com/console/console.latest.tar.gz"  # 可改为 a.tar.gz 测试
+          $url = "https://dl.rustfs.com/artifacts/console/rustfs-console-latest.zip"  # 可改为 a.tar.gz 测试
           $file = Split-Path $url -Leaf
           Invoke-WebRequest -Uri $url -OutFile $file -ErrorAction Stop
           if (!(Test-Path $file)) {
@@ -93,7 +93,7 @@ jobs:
       - name: Download Static Assets (Linux/macOS)
         if: matrix.os != 'windows-latest'
         run: |
-          url="https://dl.rustfs.com/console/console.latest.tar.gz"  # 可改为 a.zip 测试
+          url="https://dl.rustfs.com/artifacts/console/rustfs-console-latest.zip"  # 可改为 a.zip 测试
           file=$(basename "$url")
           curl -L -o "$file" "$url"
           if [ ! -f "$file" ]; then
