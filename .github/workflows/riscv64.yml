@@ -1,33 +1,33 @@
 name: RISC-V Build
 
-on: [push]
+on: [ push ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-    - name: Setup Rust
-      uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
-        target: riscv64gc-unknown-linux-gnu
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
+          target: riscv64gc-unknown-linux-gnu
 
-    - name: Install dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y \
-          gcc-riscv64-linux-gnu \
-          qemu-user-static \
-          libwebkit2gtk-4.1-dev:riscv64
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            gcc-riscv64-linux-gnu \
+            qemu-user-static \
+            libwebkit2gtk-4.1-dev:riscv64
 
-    - name: Build with cross
-      run: |
-        cargo install cross
-        cross build --target riscv64gc-unknown-linux-gnu
+      - name: Build with cross
+        run: |
+          cargo install cross
+          cross build --target riscv64gc-unknown-linux-gnu
 
-    - name: Test in QEMU
-      run: |
-        qemu-riscv64-static -L /usr/riscv64-linux-gnu \
-          target/riscv64gc-unknown-linux-gnu/debug/riscv-gui-demo --help
+      - name: Test in QEMU
+        run: |
+          qemu-riscv64-static -L /usr/riscv64-linux-gnu \
+            target/riscv64gc-unknown-linux-gnu/debug/riscv-gui-demo --help
