@@ -1,27 +1,31 @@
-use gtk::prelude::*;
-use gtk::{glib, Application, ApplicationWindow};
-use gtk4 as gtk;
+// use gtk::prelude::*;
+// use gtk::{glib, Application, ApplicationWindow};
+// use gtk4 as gtk;
 
-fn main() -> glib::ExitCode {
-    let app = Application::builder()
-        .application_id("org.example.HelloWorld")
-        .build();
-
-    app.connect_activate(|app| {
-        // We create the main window.
-        let window = ApplicationWindow::builder()
-            .application(app)
-            .default_width(320)
-            .default_height(200)
-            .title("Hello, World!")
-            .build();
-
-        // Show the window.
-        window.present();
-    });
-
-    app.run()
+fn main() {
+    println!("你好，来自 Rust 的 RISC-V！");
 }
+
+// fn main2() -> glib::ExitCode {
+//     // let app = Application::builder()
+//     //     .application_id("org.example.HelloWorld")
+//     //     .build();
+//     //
+//     // app.connect_activate(|app| {
+//     //     // We create the main window.
+//     //     let window = ApplicationWindow::builder()
+//     //         .application(app)
+//     //         .default_width(320)
+//     //         .default_height(200)
+//     //         .title("Hello, World!")
+//     //         .build();
+//     //
+//     //     // Show the window.
+//     //     window.present();
+//     // });
+//     //
+//     // app.run()
+// }
 
 // #[derive(Parser, Debug)]
 // #[clap(
