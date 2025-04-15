@@ -42,8 +42,9 @@ jobs:
       - name: Install Cross-Compilation Tools (Linux)
         if: matrix.os == 'ubuntu-latest'
         run: |
+          sudo apt-get clean
           sudo apt-get update
-          sudo apt-get install build-essential libdbus-sys gcc pkg-config libssl-dev lld libdbus-1-dev libwayland-dev libwebkit2gtk-4.1-dev libxdo-dev -y
+          sudo apt-get install build-essential gcc pkg-config libssl-dev lld libdbus-1-dev libwayland-dev libwebkit2gtk-4.1-dev libxdo-dev libdbus-sys -y
         shell: bash
       - name: Install Cross-Compilation Tools (Linux)
         if: matrix.os == 'ubuntu-latest' && (matrix.target == 'aarch64-unknown-linux-musl'||
