@@ -1,302 +1,302 @@
-#name: Rust OmniForge Build
-#
-## Trigger condition: Push to the main branch or trigger manually
-#on:
-#  push:
-#    branches: [ main ]
-#    tags: [ 'v*', '*' ]  # Tag pushing
-#  pull_request: # Add a merge trigger
-#    branches: [ main ]
-#  workflow_dispatch:     # Manually triggered
-#
-## Permission Settings: Allow content to be written in order to upload products
-#permissions:
-#  contents: write
-#
-## Define a build job
-#jobs:
-#  build-and-package:
-#    name: Build and Package for ${{ matrix.os }}-${{ matrix.target }}
-#    runs-on: ${{ matrix.os }}
-#
-#    # Matrix Strategy: Define the combination of operating system and target architecture
-#    strategy:
-#      matrix:
-#        os: [ ubuntu-latest, macos-latest, windows-latest ]
-#        target: [ x86_64-unknown-linux-gnu, aarch64-unknown-linux-gnu, x86_64-apple-darwin, aarch64-apple-darwin, x86_64-pc-windows-msvc ]
-#        exclude:
-#          - os: windows-latest
-#            target: aarch64-unknown-linux-gnu
-#          - os: windows-latest
-#            target: x86_64-unknown-linux-gnu
-#          - os: windows-latest
-#            target: aarch64-apple-darwin
-#          - os: windows-latest
-#            target: x86_64-apple-darwin
-#          - os: ubuntu-latest
-#            target: x86_64-apple-darwin
-#          - os: ubuntu-latest
-#            target: aarch64-apple-darwin
-#          - os: macos-latest
-#            target: x86_64-unknown-linux-gnu
-#          - os: macos-latest
-#            target: aarch64-unknown-linux-gnu
-#          - os: macos-latest
-#            target: x86_64-pc-windows-msvc
-#          - os: ubuntu-latest
-#            target: x86_64-pc-windows-msvc
-#
-#    steps:
-#      # Check out the code
-#      - name: Checkout Repository
-#        uses: actions/checkout@v4
-#
-#      # Install the Rust toolchain
-#      - name: Install Rust Toolchain
-#        uses: dtolnay/rust-toolchain@stable
-#        with:
-#          targets: ${{ matrix.target }}
-#
-#      # Caching Cargo dependencies
-#      - name: Cache Cargo Dependencies
-#        uses: actions/cache@v3
-#        with:
-#          path: |
-#            ~/.cargo/registry
-#            ~/.cargo/git
-#            target
-#          key: ${{ matrix.os }}-${{ matrix.target }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-#          restore-keys: |
-#            ${{ matrix.os }}-${{ matrix.target }}-cargo-
-#
-#      # Install 7-Zip on Windows
-#      - name: Install 7-Zip (Windows)
-#        if: matrix.os == 'windows-latest'
-#        run: choco install 7zip -y
-#        shell: powershell
-#
-#      # Download the zip file（Windows used PowerShell）
-#      - name: Download Static Assets (Windows)
-#        if: matrix.os == 'windows-latest'
-#        run: |
-#          $url = "https://dl.rustfs.com/artifacts/console/rustfs-console-latest.zip"  # 可改为 a.tar.gz 测试
-#          $file = Split-Path $url -Leaf
-#          Invoke-WebRequest -Uri $url -OutFile $file -ErrorAction Stop
-#          if (!(Test-Path $file)) {
-#            Write-Error "Failed to download $file"
-#            exit 1
-#          }
-#          Get-ChildItem $file
-#        shell: powershell
-#
-#      # Download the zip file（Linux/macOS used bash）
-#      - name: Download Static Assets (Linux/macOS)
-#        if: matrix.os != 'windows-latest'
-#        run: |
-#          url="https://dl.rustfs.com/artifacts/console/rustfs-console-latest.zip"  # 可改为 a.zip 测试
-#          file=$(basename "$url")
-#          curl -L -o "$file" "$url"
-#          if [ ! -f "$file" ]; then
-#            echo "Error: Failed to download $file"
-#            exit 1
-#          fi
-#          echo "Downloaded $file successfully"
-#          ls -l "$file"
-#          ls -la
-#        shell: bash
-#
-#      # Unzip the zip file（Windows used PowerShell + 7-Zip）
-#      - name: Extract Static Assets (Windows)
-#        if: matrix.os == 'windows-latest'
-#        run: |
-#          $file = Get-ChildItem *.zip,*.tar.gz -ErrorAction Stop | Select-Object -First 1
-#          New-Item -ItemType Directory -Path static -Force | Out-Null
-#          if ($file.Extension -eq ".zip") {
-#            7z x $file -o"static" -y
-#          } elseif ($file.Extension -eq ".gz") {
-#            7z x $file -o"static" -y  # 解压 tar.gz
-#          }
-#          Remove-Item $file
-#          Get-ChildItem static
-#        shell: powershell
-#
-#      # Unzip the zip file（Linux/macOS used bash）
-#      - name: Extract Static Assets (Linux/macOS)
-#        if: matrix.os != 'windows-latest'
-#        run: |
-#          ls -la
-#          # Find the first .zip or .tar.gz file
-#          file=""
-#          for f in *.zip *.tar.gz; do
-#            if [ -f "$f" ]; then
-#              file="$f"
-#              break
-#            fi
-#          done
-#          if [ -z "$file" ]; then
-#            echo "Error: No .zip or .tar.gz file found in the current directory"
-#            ls -la  # Displays the contents of the current directory for debugging
-#            exit 1
-#          fi
-#          # Outputs the name of the file found
-#          echo "Found file: $file"
-#          mkdir -p static
-#          if [[ "$file" == *.zip ]]; then
-#            echo "Unzipping $file to static/"
-#            unzip "$file" -d static || { echo "Error: Failed to unzip $file"; exit 1; }
-#          elif [[ "$file" == *.tar.gz ]]; then
-#            echo "Extracting $file to static/"
-#            tar -xzf "$file" -C static || { echo "Error: Failed to extract $file"; exit 1; }
-#          else
-#            echo "Error: Unsupported file format: $file"
-#            exit 1
-#          fi
-#          # Check whether the decompression is successful
-#          if [ $? -ne 0 ]; then
-#            echo "Error: Failed to extract $file"
-#            exit 2
-#          fi
-#          rm "$file"
-#          ls -la static
-#        shell: bash
-#
-#      # Installing the Cross-Compilation Toolchain (Linux)
-#      - name: Install Cross-Compilation Tools build-essential (Linux)
-#        if: matrix.os == 'ubuntu-latest'
-#        run: |
-#          sudo apt-get clean && sudo apt-get update && sudo apt-get install gcc pkg-config libssl-dev lld libdbus-1-dev libwayland-dev libwebkit2gtk-4.1-dev libxdo-dev build-essential -y
-#        shell: bash
-#
-#      - name: Install Cross-Compilation Tools (Linux)
-#        if: matrix.os == 'ubuntu-latest' && matrix.target == 'aarch64-unknown-linux-gnu'
-#        run: |
-#          sudo apt-get update && sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu aarch64-linux-gnu-gcc --version -y  # Verify the installation
-#        shell: bash
-#
-#      # Compile the Rust project（Windows used PowerShell）
-#      - name: Build Rust Binary (Windows)
-#        if: matrix.os == 'windows-latest'
-#        run: |
-#          cargo build --release --target ${{ matrix.target }} --verbose
-#          if ($LASTEXITCODE -ne 0) {
-#            Write-Error "Rust build failed"
-#            exit 1
-#          }
-#        shell: powershell
-#
-#      # Compile the Rust project（Linux/macOS used bash）
-#      - name: Build Rust Binary (Linux/macOS)
-#        if: matrix.os != 'windows-latest'
-#        run: |
-#          # Configure the linker based on the target
-#          case "${{ matrix.target }}" in
-#          "x86_64-unknown-linux-gnu")
-#          # Default gcc
-#          export CC_x86_64_unknown_linux_gnu=gcc
-#          export CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=gcc
-#          ;;
-#          "aarch64-unknown-linux-gnu")
-#          # AArch64 Cross-compiler
-#          export CC_aarch64_unknown_linux_gnu=aarch64-linux-gnu-gcc
-#          export CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc
-#          ;;
-#          "x86_64-apple-darwin")
-#          # macOS default clang
-#          export CC_x86_64_apple_darwin=clang
-#          export CARGO_TARGET_X86_64_APPLE_DARWIN_LINKER=clang
-#          ;;
-#          "aarch64-apple-darwin")
-#          # macOS ARM64 used clang
-#          export CC_aarch64_apple_darwin=clang
-#          export CARGO_TARGET_AARCH64_APPLE_DARWIN_LINKER=clang
-#          ;;
-#          esac
-#          # Validating Environment Variables (for Debugging)
-#          echo "CC for ${{ matrix.target }}: $CC_${{ matrix.target }}"
-#          echo "Linker for ${{ matrix.target }}: $CARGO_TARGET_${{ matrix.target }}_LINKER"
-#          # Perform compilation
-#          cargo build --release --target ${{ matrix.target }} --verbose
-#          if [ $? -ne 0 ]; then
-#          echo "Rust build failed"
-#          exit 1
-#          fi
-#        shell: bash
-#
-#      # set the tag value
-#      - name: Set Tag Variable
-#        run: |
-#          # Initialize the TAG
-#          TAG="notag"
-#          # If it's pull_request, use "main"
-#          if [ "${{ github.event_name }}" = "pull_request" ]; then
-#            TAG="main"
-#          # If it's a tag push, use the tag value
-#          elif [ "${{ github.event_name }}" = "push" ] && [[ "${{ github.ref }}" =~ ^refs/tags/ ]]; then
-#            TAG="${{ github.ref_name }}"
-#          fi
-#          echo "TAG=$TAG" >> $GITHUB_ENV
-#          echo "Set TAG to: $TAG"
-#        shell: bash
-#
-#      # Packing binaries and static directory（Windows used PowerShell）
-#      - name: Package Binary and Static Assets (Windows)
-#        if: matrix.os == 'windows-latest'
-#        run: |
-#          New-Item -ItemType Directory -Path release-package -Force | Out-Null
-#          Copy-Item "target/${{ matrix.target }}/release/rst-action.exe" -Destination release-package/
-#          Copy-Item -Recurse static release-package/
-#          7z a "release-package-${{ matrix.target }}-${{ matrix.os }}-${{ env.TAG }}.zip" "release-package/*" -r
-#          Get-ChildItem .
-#        shell: powershell
-#
-#      # Packing binaries and static directory（Linux/macOS used bash）
-#      - name: Package Binary and Static Assets (Linux/macOS)
-#        if: matrix.os != 'windows-latest'
-#        run: |
-#          mkdir -p release-package
-#          cp target/${{ matrix.target }}/release/rst-action release-package/
-#          cp -r static release-package/
-#          zip -r release-package-${{ matrix.target }}-${{ matrix.os }}-${{ env.TAG }}.zip release-package/*
-#          ls -la
-#        shell: bash
-#
-#      # Upload a compressed file as a build product (used v4）
-#      - name: Upload Artifact
-#        uses: actions/upload-artifact@v4
-#        with:
-#          name: release-package-${{ matrix.target }}-${{ matrix.os }}-${{ env.TAG }}
-#          path: release-package-${{ matrix.target }}-${{ matrix.os }}-${{ env.TAG }}.zip
-#
-#      - name: Debug GitHub Context
-#        run: echo "github.ref = ${{ github.ref }}"
-#
-#      - name: Check Artifact Before Release
-#        run: |
-#          if [ ! -f "release-package-${{ matrix.target }}-${{ matrix.os }}-${{ env.TAG }}.zip" ]; then
-#            echo "Error: File release-package-${{ matrix.target }}-${{ matrix.os }}-${{ env.TAG }}.zip not found"
-#            ls -la || dir
-#            exit 1
-#          fi
-#        shell: bash
-#
-#  release:
-#    needs: build-and-package
-#    runs-on: ubuntu-latest
-#    if: startsWith(github.ref, 'refs/tags/')
-#    steps:
-#      - name: Download All Artifacts
-#        uses: actions/download-artifact@v4
-#        with:
-#          path: artifacts
-#      # Publish to GitHub Releases（used v2）
-#      - name: Release Package
-#        uses: softprops/action-gh-release@v2
-#        with:
-#          tag_name: ${{ github.ref_name }}
-#          name: RST Action Release ${{ github.ref_name }}
-#          draft: false
-#          prerelease: false
-#          files: artifacts/**/*.zip
-#          token: ${{ secrets.GITHUB_TOKEN }}  # Use explicitly GITHUB_TOKEN
-#        env:
-#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Make sure that environment variables are available
+name: Rust OmniForge Build
+
+# Trigger condition: Push to the main branch or trigger manually
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*', '*' ]  # Tag pushing
+  pull_request: # Add a merge trigger
+    branches: [ main ]
+  workflow_dispatch:     # Manually triggered
+
+# Permission Settings: Allow content to be written in order to upload products
+permissions:
+  contents: write
+
+# Define a build job
+jobs:
+  build-and-package:
+    name: Build and Package for ${{ matrix.os }}-${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+
+    # Matrix Strategy: Define the combination of operating system and target architecture
+    strategy:
+      matrix:
+        os: [ ubuntu-latest, macos-latest, windows-latest ]
+        target: [ x86_64-unknown-linux-gnu, aarch64-unknown-linux-gnu, x86_64-apple-darwin, aarch64-apple-darwin, x86_64-pc-windows-msvc ]
+        exclude:
+          - os: windows-latest
+            target: aarch64-unknown-linux-gnu
+          - os: windows-latest
+            target: x86_64-unknown-linux-gnu
+          - os: windows-latest
+            target: aarch64-apple-darwin
+          - os: windows-latest
+            target: x86_64-apple-darwin
+          - os: ubuntu-latest
+            target: x86_64-apple-darwin
+          - os: ubuntu-latest
+            target: aarch64-apple-darwin
+          - os: macos-latest
+            target: x86_64-unknown-linux-gnu
+          - os: macos-latest
+            target: aarch64-unknown-linux-gnu
+          - os: macos-latest
+            target: x86_64-pc-windows-msvc
+          - os: ubuntu-latest
+            target: x86_64-pc-windows-msvc
+
+    steps:
+      # Check out the code
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      # Install the Rust toolchain
+      - name: Install Rust Toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      # Caching Cargo dependencies
+      - name: Cache Cargo Dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ matrix.os }}-${{ matrix.target }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ matrix.os }}-${{ matrix.target }}-cargo-
+
+      # Install 7-Zip on Windows
+      - name: Install 7-Zip (Windows)
+        if: matrix.os == 'windows-latest'
+        run: choco install 7zip -y
+        shell: powershell
+
+      # Download the zip file（Windows used PowerShell）
+      - name: Download Static Assets (Windows)
+        if: matrix.os == 'windows-latest'
+        run: |
+          $url = "https://dl.rustfs.com/artifacts/console/rustfs-console-latest.zip"  # 可改为 a.tar.gz 测试
+          $file = Split-Path $url -Leaf
+          Invoke-WebRequest -Uri $url -OutFile $file -ErrorAction Stop
+          if (!(Test-Path $file)) {
+            Write-Error "Failed to download $file"
+            exit 1
+          }
+          Get-ChildItem $file
+        shell: powershell
+
+      # Download the zip file（Linux/macOS used bash）
+      - name: Download Static Assets (Linux/macOS)
+        if: matrix.os != 'windows-latest'
+        run: |
+          url="https://dl.rustfs.com/artifacts/console/rustfs-console-latest.zip"  # 可改为 a.zip 测试
+          file=$(basename "$url")
+          curl -L -o "$file" "$url"
+          if [ ! -f "$file" ]; then
+            echo "Error: Failed to download $file"
+            exit 1
+          fi
+          echo "Downloaded $file successfully"
+          ls -l "$file"
+          ls -la
+        shell: bash
+
+      # Unzip the zip file（Windows used PowerShell + 7-Zip）
+      - name: Extract Static Assets (Windows)
+        if: matrix.os == 'windows-latest'
+        run: |
+          $file = Get-ChildItem *.zip,*.tar.gz -ErrorAction Stop | Select-Object -First 1
+          New-Item -ItemType Directory -Path static -Force | Out-Null
+          if ($file.Extension -eq ".zip") {
+            7z x $file -o"static" -y
+          } elseif ($file.Extension -eq ".gz") {
+            7z x $file -o"static" -y  # 解压 tar.gz
+          }
+          Remove-Item $file
+          Get-ChildItem static
+        shell: powershell
+
+      # Unzip the zip file（Linux/macOS used bash）
+      - name: Extract Static Assets (Linux/macOS)
+        if: matrix.os != 'windows-latest'
+        run: |
+          ls -la
+          # Find the first .zip or .tar.gz file
+          file=""
+          for f in *.zip *.tar.gz; do
+            if [ -f "$f" ]; then
+              file="$f"
+              break
+            fi
+          done
+          if [ -z "$file" ]; then
+            echo "Error: No .zip or .tar.gz file found in the current directory"
+            ls -la  # Displays the contents of the current directory for debugging
+            exit 1
+          fi
+          # Outputs the name of the file found
+          echo "Found file: $file"
+          mkdir -p static
+          if [[ "$file" == *.zip ]]; then
+            echo "Unzipping $file to static/"
+            unzip "$file" -d static || { echo "Error: Failed to unzip $file"; exit 1; }
+          elif [[ "$file" == *.tar.gz ]]; then
+            echo "Extracting $file to static/"
+            tar -xzf "$file" -C static || { echo "Error: Failed to extract $file"; exit 1; }
+          else
+            echo "Error: Unsupported file format: $file"
+            exit 1
+          fi
+          # Check whether the decompression is successful
+          if [ $? -ne 0 ]; then
+            echo "Error: Failed to extract $file"
+            exit 2
+          fi
+          rm "$file"
+          ls -la static
+        shell: bash
+
+      # Installing the Cross-Compilation Toolchain (Linux)
+      - name: Install Cross-Compilation Tools build-essential (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get clean && sudo apt-get update && sudo apt-get install gcc pkg-config libssl-dev lld libdbus-1-dev libwayland-dev libwebkit2gtk-4.1-dev libxdo-dev build-essential -y
+        shell: bash
+
+      - name: Install Cross-Compilation Tools (Linux)
+        if: matrix.os == 'ubuntu-latest' && matrix.target == 'aarch64-unknown-linux-gnu'
+        run: |
+          sudo apt-get update && sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu aarch64-linux-gnu-gcc --version -y  # Verify the installation
+        shell: bash
+
+      # Compile the Rust project（Windows used PowerShell）
+      - name: Build Rust Binary (Windows)
+        if: matrix.os == 'windows-latest'
+        run: |
+          cargo build --release --target ${{ matrix.target }} --verbose
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "Rust build failed"
+            exit 1
+          }
+        shell: powershell
+
+      # Compile the Rust project（Linux/macOS used bash）
+      - name: Build Rust Binary (Linux/macOS)
+        if: matrix.os != 'windows-latest'
+        run: |
+          # Configure the linker based on the target
+          case "${{ matrix.target }}" in
+          "x86_64-unknown-linux-gnu")
+          # Default gcc
+          export CC_x86_64_unknown_linux_gnu=gcc
+          export CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=gcc
+          ;;
+          "aarch64-unknown-linux-gnu")
+          # AArch64 Cross-compiler
+          export CC_aarch64_unknown_linux_gnu=aarch64-linux-gnu-gcc
+          export CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc
+          ;;
+          "x86_64-apple-darwin")
+          # macOS default clang
+          export CC_x86_64_apple_darwin=clang
+          export CARGO_TARGET_X86_64_APPLE_DARWIN_LINKER=clang
+          ;;
+          "aarch64-apple-darwin")
+          # macOS ARM64 used clang
+          export CC_aarch64_apple_darwin=clang
+          export CARGO_TARGET_AARCH64_APPLE_DARWIN_LINKER=clang
+          ;;
+          esac
+          # Validating Environment Variables (for Debugging)
+          echo "CC for ${{ matrix.target }}: $CC_${{ matrix.target }}"
+          echo "Linker for ${{ matrix.target }}: $CARGO_TARGET_${{ matrix.target }}_LINKER"
+          # Perform compilation
+          cargo build --release --target ${{ matrix.target }} --verbose
+          if [ $? -ne 0 ]; then
+          echo "Rust build failed"
+          exit 1
+          fi
+        shell: bash
+
+      # set the tag value
+      - name: Set Tag Variable
+        run: |
+          # Initialize the TAG
+          TAG="notag"
+          # If it's pull_request, use "main"
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            TAG="main"
+          # If it's a tag push, use the tag value
+          elif [ "${{ github.event_name }}" = "push" ] && [[ "${{ github.ref }}" =~ ^refs/tags/ ]]; then
+            TAG="${{ github.ref_name }}"
+          fi
+          echo "TAG=$TAG" >> $GITHUB_ENV
+          echo "Set TAG to: $TAG"
+        shell: bash
+
+      # Packing binaries and static directory（Windows used PowerShell）
+      - name: Package Binary and Static Assets (Windows)
+        if: matrix.os == 'windows-latest'
+        run: |
+          New-Item -ItemType Directory -Path release-package -Force | Out-Null
+          Copy-Item "target/${{ matrix.target }}/release/rst-action.exe" -Destination release-package/
+          Copy-Item -Recurse static release-package/
+          7z a "release-package-${{ matrix.target }}-${{ matrix.os }}-${{ env.TAG }}.zip" "release-package/*" -r
+          Get-ChildItem .
+        shell: powershell
+
+      # Packing binaries and static directory（Linux/macOS used bash）
+      - name: Package Binary and Static Assets (Linux/macOS)
+        if: matrix.os != 'windows-latest'
+        run: |
+          mkdir -p release-package
+          cp target/${{ matrix.target }}/release/rst-action release-package/
+          cp -r static release-package/
+          zip -r release-package-${{ matrix.target }}-${{ matrix.os }}-${{ env.TAG }}.zip release-package/*
+          ls -la
+        shell: bash
+
+      # Upload a compressed file as a build product (used v4）
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-package-${{ matrix.target }}-${{ matrix.os }}-${{ env.TAG }}
+          path: release-package-${{ matrix.target }}-${{ matrix.os }}-${{ env.TAG }}.zip
+
+      - name: Debug GitHub Context
+        run: echo "github.ref = ${{ github.ref }}"
+
+      - name: Check Artifact Before Release
+        run: |
+          if [ ! -f "release-package-${{ matrix.target }}-${{ matrix.os }}-${{ env.TAG }}.zip" ]; then
+            echo "Error: File release-package-${{ matrix.target }}-${{ matrix.os }}-${{ env.TAG }}.zip not found"
+            ls -la || dir
+            exit 1
+          fi
+        shell: bash
+
+  release:
+    needs: build-and-package
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    steps:
+      - name: Download All Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      # Publish to GitHub Releases（used v2）
+      - name: Release Package
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: RST Action Release ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+          files: artifacts/**/*.zip
+          token: ${{ secrets.GITHUB_TOKEN }}  # Use explicitly GITHUB_TOKEN
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Make sure that environment variables are available
