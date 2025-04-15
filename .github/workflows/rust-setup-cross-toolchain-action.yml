@@ -64,4 +64,4 @@ jobs:
         shell: bash
 
 
-      - run: cargo test --verbose
+      - run: cargo test --verbose --target ${{ matrix.target }}

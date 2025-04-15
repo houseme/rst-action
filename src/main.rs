@@ -131,6 +131,12 @@ mod tests {
     use super::*;
 
     #[test]
+    fn test_display_system_info() {
+        let mut sys = System::new_all();
+        display_system_info(&mut sys);
+    }
+
+    #[test]
     fn test_display_network_speed() {
         let mut sys = System::new_all();
         display_network_speed(&mut sys, 1);
