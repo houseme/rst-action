@@ -2,8 +2,43 @@
 // use gtk::{glib, Application, ApplicationWindow};
 // use gtk4 as gtk;
 
-fn main() {
-    println!("你好，来自 Rust 的 RISC-V！");
+// fn main() {
+//     println!("你好，来自 Rust 的 RISC-V！");
+// }
+
+use std::path::Path;
+use tokio::fs;
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // 删除文件
+    let file_path = Path::new("example.txt");
+    if file_path.exists() {
+        fs::remove_file(file_path).await?;
+        println!("文件已删除");
+    } else {
+        println!("文件不存在");
+    }
+
+    // 删除空目录
+    let empty_dir_path = Path::new("empty_dir");
+    if empty_dir_path.exists() {
+        fs::remove_dir(empty_dir_path).await?;
+        println!("空目录已删除");
+    } else {
+        println!("空目录不存在");
+    }
+
+    // 删除目录及其内容
+    let dir_path = Path::new("dir_with_contents");
+    if dir_path.exists() {
+        fs::remove_dir_all(dir_path).await?;
+        println!("目录及其内容已删除");
+    } else {
+        println!("目录不存在");
+    }
+
+    Ok(())
 }
 
 // fn main2() -> glib::ExitCode {
